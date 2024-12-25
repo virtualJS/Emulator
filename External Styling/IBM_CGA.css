@@ -1,0 +1,8 @@
+@font-face {
+    font-family: "MxPlus IBM CGA";
+    src: url("MxPlus_IBM_CGA.ttf") format("truetype");
+}
+
+.MxPlusIBMCGA {
+    font-family: "MxPlus IBM CGA", sans-serif;
+}
