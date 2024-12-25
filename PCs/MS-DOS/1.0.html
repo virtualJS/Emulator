@@ -1,11 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="stylesheet" href="https://virtualjs.github.io/Emulator/Windows/Externall%20Styling/IBM_CGA.css"> <!-- Import MxPlus IBM CGA-->
+    <link rel="stylesheet" href="https://virtualjs.github.io/Emulator/External%20Styling/IBM_CGA.css"> <!-- Import MxPlus IBM CGA-->
     <style>
-        html, body, div, input {
-            font-family: "MxPlus IBM CGA";
-        }
         /* Output container style */
         #output-container {
             white-space: pre-wrap;
@@ -51,37 +48,19 @@ div[contenteditable="true"] {
     </style>
     <title>MS-DOS 1.0 Emulator</title>
 </head>
-<body class="black">
-    <div class="black">
+<body class="black" class="font-px-plus-ibm-cga">
+    <div class="black" class="font-px-plus-ibm-cga">
         MS-DOS Version 1.0<br>
         Copyright (C) Microsoft Corp 1981<br>
     </div>
-    <div id="output-container" class="black"></div>
+    <div class="font-px-plus-ibm-cga" id="output-container" class="black"></div>
     <div id="input-container">
         <div class="black">
             <span>A:&gt;</span>
-            <div contenteditable="true" id="userInput"></div>
+            <div class="font-px-plus-ibm-cga" contenteditable="true" id="userInput"></div>
         </div>
     </div>
     <script>
-    function setFaviconBasedOnTheme() {
-        const darkModeFavicon = "https://iili.io/207HCAu.png";
-        const lightModeFavicon = "https://iili.io/205OIEP.png";
-        const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-       
-        const favicon = document.getElementById('favicon');
-       
-        if (isDarkMode) {
-            favicon.href = darkModeFavicon;
-        } else {
-            favicon.href = lightModeFavicon;
-        }
-    }
-   
-    setFaviconBasedOnTheme();
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', setFaviconBasedOnTheme);
-
-
     const userInput = document.getElementById("userInput");
     const outputContainer = document.getElementById("output-container");
 
@@ -150,7 +129,6 @@ div[contenteditable="true"] {
 
                 if (inputText === "DIR") {
                     commandOutput = [
-                        "Directory of A:\\",
                         ...files.map(file => file.filename)
                     ].join("\n");
                 }
@@ -184,7 +162,7 @@ div[contenteditable="true"] {
                 }
                 else if (inputText.startsWith("TYPE ")) {
                     let fileName = inputText.slice(5).trim();
-                    let file = files.find(file => file.filename === fileName);
+                    let file = files.find(file => file.filename + "." + file.extension === fileName);
                     if (file) {
                         commandOutput = file.content;
                     } else {
