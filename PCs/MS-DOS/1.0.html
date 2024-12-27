@@ -1,20 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="stylesheet" href="https://virtualjs.github.io/Emulator/External%20Styling/IBM_CGA.css"> <!-- Import MxPlus IBM CGA-->
+    <link rel="stylesheet" href="https://virtualjs.github.io/Emulator/Windows/External Styling/fonts.css"> <!-- Import PxPlus IBM CGA and Fixedsys 62-->
     <style>
+        html, body, div, input {
+            font-family: "PxPlus IBM CGA";
+        }
         /* Output container style */
         #output-container {
             white-space: pre-wrap;
             margin-top: 0;
         }
 
-
         /* Make the input container take up the full width */
         #input-container {
             width: 100%;
         }
-
 
         /* Style for user input area */
         #userInput {
@@ -37,8 +38,6 @@ div[contenteditable="true"] {
     font-size: inherit;
 }
 
-
-/* Ensure the container aligns properly without visible borders */
 #input-container .black div[contenteditable="true"] {
     min-width: 50px;
     display: inline-block;
@@ -48,33 +47,99 @@ div[contenteditable="true"] {
     </style>
     <title>MS-DOS 1.0 Emulator</title>
 </head>
-<body class="black" class="font-px-plus-ibm-cga">
-    <div class="black" class="font-px-plus-ibm-cga">
+<body class="black">
+    <div class="black">
         MS-DOS Version 1.0<br>
         Copyright (C) Microsoft Corp 1981<br>
     </div>
-    <div class="font-px-plus-ibm-cga" id="output-container" class="black"></div>
+    <div id="output-container" class="black"></div>
     <div id="input-container">
         <div class="black">
-            <span>A:&gt;</span>
-            <div class="font-px-plus-ibm-cga" contenteditable="true" id="userInput"></div>
+            <span>A&gt;</span>
+            <div contenteditable="true" id="userInput"></div>
         </div>
     </div>
     <script>
+        // Handle F12 key press
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'F12') {
+    toggleFullscreen();
+  }
+});
+
+// Handle double-click anywhere on the page
+document.addEventListener('dblclick', () => {
+  toggleFullscreen();
+});
+
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen();
+    } else if (document.documentElement.mozRequestFullScreen) { 
+      document.documentElement.mozRequestFullScreen();
+    } else if (document.documentElement.webkitRequestFullscreen) { 
+      document.documentElement.webkitRequestFullscreen();
+    } else if (document.documentElement.msRequestFullscreen) { 
+      document.documentElement.msRequestFullscreen();
+    }
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    } else if (document.mozCancelFullScreen) { 
+      document.mozCancelFullScreen();
+    } else if (document.webkitExitFullscreen) { 
+      document.webkitExitFullscreen();
+    } else if (document.msExitFullscreen) { 
+      document.msExitFullscreen();
+    }
+  }
+}
     const userInput = document.getElementById("userInput");
     const outputContainer = document.getElementById("output-container");
-
 
     let inFileCreation = false;
     let currentFileName = '';
     let currentFileType = '';
 
+    // Function to generate a random date between 08-12-81 and 04-27-82 in MM-DD-YY format
+    function generateRandomDate() {
+        const startDate = new Date(1981, 7, 12); // August 12, 1981
+        const endDate = new Date(1982, 3, 27); // April 27, 1982
 
+        var randomTime = startDate.getTime() + Math.random() * (endDate.getTime() - startDate.getTime());
+        var randomDate = new Date(randomTime);
+
+        const month = (randomDate.getMonth() + 1).toString().padStart(2, '0'); // MM
+        const day = randomDate.getDate().toString().padStart(2, '0'); // DD
+        const year = randomDate.getFullYear().toString().slice(-2); // YY
+
+       return `${month}-${day}-${year}`; // Return date in MM-DD-YY format
+    }
+function generateRandomTime() {
+  const hours = Math.floor(Math.random() * 24).toString().padStart(2, '0');
+  const minutes = Math.floor(Math.random() * 60).toString().padStart(2, '0');
+  const seconds = Math.floor(Math.random() * 60).toString().padStart(2, '0');
+  const milliseconds = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+
+  var randomTime = `${hours}:${minutes}:${seconds}.${milliseconds}`;
+
+  // Save the random time to localStorage
+  localStorage.setItem('randomTime', randomTime);
+
+  return randomTime;
+}
+
+// Generate and save the random time
+const generatedTime = generateRandomTime();
+
+// Retrieve the saved time from localStorage
+localStorage.setItem('randomDate', (new Date(new Date(1981, 7, 12).getTime() + Math.random() * (new Date(1982, 3, 27).getTime() - new Date(1981, 7, 12).getTime()))).toLocaleDateString('en-US', { year: '2-digit', month: '2-digit', day: '2-digit' }));
+localStorage.setItem('randomTime', new Date().toTimeString().slice(0, 8));
     // Save files to localStorage
     function saveFiles() {
         localStorage.setItem("files", JSON.stringify(files));
     }
-
 
     // Function to move cursor to the far right after every input
     function moveCursorToEnd() {
@@ -85,14 +150,6 @@ div[contenteditable="true"] {
         selection.removeAllRanges();
         selection.addRange(range);
     }
-
-
-    // Convert input to uppercase as user types
-    userInput.addEventListener('input', function() {
-        userInput.innerText = userInput.innerText.toUpperCase();
-        moveCursorToEnd();
-    });
-
 
     // Respond to user input in IO.SYS
     function respondToInput() {
@@ -126,25 +183,31 @@ div[contenteditable="true"] {
                 let inputText = userInput.innerText.trim();
                 let commandOutput = '';
 
-
-                if (inputText === "DIR") {
+                if (inputText.toUpperCase() === "DIR") {
                     commandOutput = [
-                        ...files.map(file => file.filename)
+                        ...files.map(file => {
+                            // Format the filename to 8 characters, the extension to 3 characters
+                            const paddedFilename = file.filename.padEnd(8, ' ');
+                            const paddedExtension = file.extension.padEnd(3, ' ');
+                            const size = file.content.length; // Get the size of the file content
+                            return `${paddedFilename} ${paddedExtension} ${size.toString().padStart(5, ' ')} ${file["date-of-creation"]}`;
+                        })
                     ].join("\n");
                 }
-                
-                else if (inputText.startsWith("DEL ")) {
+                else if (inputText.toUpperCase().startsWith("DEL ")) {
                     let fileName = inputText.slice(4).trim();
                     let fileIndex = files.findIndex(file => file.filename === fileName);
                     if (fileIndex !== -1) {
                         files.splice(fileIndex, 1); // Remove the file from the array
                         saveFiles(); // Save updated files to localStorage
                         commandOutput = `File ${fileName} deleted.`;
+                        
                     } else {
                         commandOutput = "Bad command or file name";
                     }
                 }
-                else if (inputText.startsWith("REN ")) {
+                
+                else if (inputText.toUpperCase().startsWith("REN ")) {
                     let parts = inputText.slice(4).trim().split(" ");
                     if (parts.length === 2) {
                         let oldFileName = parts[0];
@@ -153,6 +216,7 @@ div[contenteditable="true"] {
                         if (file) {
                             file.filename = newFileName;
                             saveFiles(); // Save updated files to localStorage
+                            commandOutput = `File ${oldFileName} renamed to ${newFileName}.`;
                         } else {
                             commandOutput = "Bad command or file name";
                         }
@@ -160,8 +224,8 @@ div[contenteditable="true"] {
                         commandOutput = "Bad command or file name";
                     }
                 }
-                else if (inputText.startsWith("TYPE ")) {
-                    let fileName = inputText.slice(5).trim();
+                else if (inputText.toUpperCase().startsWith("TYPE ")) {
+                    let fileName = inputText.toUpperCase().slice(5).trim();
                     let file = files.find(file => file.filename + "." + file.extension === fileName);
                     if (file) {
                         commandOutput = file.content;
@@ -169,19 +233,52 @@ div[contenteditable="true"] {
                         commandOutput = "Bad command or file name";
                     }
                 }
-                else if (inputText.trim() === "") {
+        else if (inputText.toUpperCase().startsWith("COPY CON ")) {
+                const args = inputText.slice(9).trim();
+                const parts = args.split(".");
+                var fileName = parts[0];
+                const extension = parts[1];
+                if (fileName.length > 0) {
+                    currentFileName = fileName;
+                    currentFileType = extension;
+                    inFileCreation = true;
+                    fileContent = ''; // Reset content for a new file
+                    commandOutput = ""
+                    commandOutput.replace(/\n/g, "");
                 } else {
                     commandOutput = "Bad command or file name";
                 }
-
-
-                // Output the command and result
-                if (inputText.trim() === "" || inputText.startsWith("REN ")) {
-                    outputContainer.textContent += `A:> ${inputText}\n`;
-                } else {
-                    outputContainer.textContent += `A:> ${inputText}\n${commandOutput}\n`;
+            }
+            // Check if we're in file creation mode (COPY CON)
+            else if (inFileCreation && inputText !== "^Z") {
+                fileContent += inputText + "\n"; // Append new content to fileContent
+                commandOutput = "";
+                commandOutput.replace(/\n/g, "");
+            }
+            // Handle the end of file creation (^Z)
+            else if (inFileCreation && inputText === "^Z") {
+                inFileCreation = false;
+                files.push({
+                    "filename": currentFileName,
+                    "extension": currentFileType,
+                    "content": fileContent,
+                    "date-of-creation": randomDate
+                });
+                saveFiles(); // Save to localStorage
+                commandOutput = `1 file(s) copied`;
+            }
+                else if (inputText.trim() === "") {
                 }
-
+                else {
+                commandOutput = "Bad command or file name";
+                }
+                // Output the command and result
+                if (inputText.trim() === "") {
+                    outputContainer.textContent += `A> ${inputText}\n`;
+                }
+                 else {
+                    outputContainer.textContent += `A> ${inputText}\n${commandOutput}\n`;
+                }
 
                 // Clear input and move cursor to end
                 userInput.innerText = '';
@@ -190,53 +287,62 @@ div[contenteditable="true"] {
             }
         });
     }
+    // Load files from localStorage or use default files
+    let files = JSON.parse(localStorage.getItem("files")) || [
+        {"filename": "MSDOS", "extension": "SYS", "content": "; ******************************************\n; File: MSDOS.SYS\n; Description: This is the system initialization file for MS-DOS.\n;              It contains configuration settings for the MS-DOS operating system.\n; Copyright (c) Microsoft Corporation. All rights reserved.\n; *******************************************\n ; Load the IO.SYS file \n MOV AH, 0x0E            ; BIOS function to load a file \nMOV AL, 0x00        \n; BIOS function for loading IO.SYS \nMOV DX, 'IO.SYS'        ; The file name we want to load \nINT 0x13                ; Call BIOS interrupt 0x13 to read the file \n; Initialize system resources,\nsetup disk drive \n; Other MS-DOS internal operations go here \n; After IO.SYS has been loaded, jump to the system initialization code in IO.SYS \nJMP 0x07C0              ; Transfer control to IO.SYS \n; End of MSDOS.SYS code ;"},
+        {"filename": "IO", "extension": "SYS", "content": "; ****************************************** \n; File: IO.SYS \n; Description: This is the input/output\nsystem file for MS-DOS. \n;              It manages low-level hardware interactions and device drivers. \n; Copyright (c) Microsoft Corporation. All rights reserved. \n;\n*******************************************; IO.SYS for MS-DOS 1.0 (Simplified Concept)\n; Assembly language (x86)\n\nORG 0x7C00         ; BIOS loads the bootloader at this address\n                ; This is where IO.SYS will be loaded.\n\n; Step 1: Set up data segment for system use\nMOV AX, 0x7C0      ; Initialize DS to point to boot sector address (from BIOS)\nMOV DS, AX         ; Set the data segment to the bootloader's address\n\n; Step 2: Basic Disk Initialization (for Floppy Disk Controller)\n; In real IO.SYS, there would be complex routines for initializing the floppy disk controller\n; For simplicity, we'll use BIOS interrupt 0x13 for disk read/write.\n\nDISK_INIT:\n    ; Initialize disk drive (Floppy or Hard drive, here assumed to be floppy).\n    ; Disk I/O operations are done using BIOS interrupt 0x13 for reading and writing sectors.\n    MOV AH, 0x00       ; BIOS function code for initializing the floppy disk.\n    MOV DL, 0x00       ; DL=0 for floppy disk A\n    INT 0x13           ; Call BIOS interrupt to initialize the disk controller\n\n    ; Check for disk initialization error (carry flag is set on error)\n    JC  DISK_ERROR     ; Jump to error handling if there was a disk error.\n\n; Step 3: Load FAT File System (simplified)\n; Real MS-DOS 1.0 would need to read the boot sector to load the file system.\n; Let's assume this step initializes a file system from the disk.\nLOAD_FAT:\n    MOV AH, 0x02       ; BIOS function to read sectors from disk.\n    MOV AL, 0x01       ; We want to read the first sector (boot sector).\n    MOV DL, 0x00       ; Drive A (Floppy)\n    MOV DS, 0x0000     ; Segment for file buffer (simplified)\n    MOV DX, 0x0100     ; Offset in memory for the sector (for example)\n    INT 0x13           ; Call BIOS interrupt to read the sector.\n\n    ; Check for disk read error (carry flag is set on error)\n    JC  DISK_ERROR     ; Jump to error handling if there was an issue.\n\n; Step 4: Initialize Display (simple text output)\n    MOV AH, 0x0E       ; BIOS teletype output function (text mode).\n    MOV AL, 'I'        ; Character to display\n    INT 0x10           ; Call BIOS interrupt to print character.\n\n    MOV AL, 'O'        ; Next character to display\n    INT 0x10\n\n    MOV AL, '.'        ; End of message\n    INT 0x10\n\n; Step 5: Handle Keyboard Input (simplified)\n    MOV AH, 0x00       ; BIOS function to wait for a key press\n    INT 0x16           ; Call BIOS interrupt for keyboard input\n    ; AX will now contain the key pressed (simplified).\n    ; Here, we just return to the caller to simulate basic input.\n\n; Step 6: Main loop (waiting for further input)\nMAIN_LOOP:\n    JMP MAIN_LOOP      ; Infinite loop to keep system alive (simplified)\n\n; Error Handling Routine\nDISK_ERROR:\n    MOV AH, 0x0E       ; BIOS function to print error character.\n    MOV AL, 'E'        ; Character for 'Error'\n    INT 0x10\n    MOV AL, 'R'        ; Character for 'Error'\n    INT 0x10\n    MOV AL, 'R'\n    INT 0x10\n    MOV AL, 'O'\n    INT 0x10\n    MOV AL, 'R'\n    INT 0x10\n\n    ; Halt the system (simple halt)\n    HLT\n\n; End of IO.SYS (Simplified Concept)\n", "date-of-creation": randomDate},
+        {"filename": "COMMAND", "extension": "COM", "content": "saveFiles();", "date-of-creation": randomDate},
+            {"filename": "CHKDSK", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
+    {"filename": "SYS", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
+    {"filename": "DISKCOPY", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
+    {"filename": "DISKCOMP", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
+    {"filename": "COMP", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
+    {"filename": "DATE", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
+    {"filename": "TIME", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
+    {"filename": "MODE", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
+    {"filename": "EDLIN", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
+    {"filename": "DEBUG", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
+    {"filename": "LINK", "extension": "EXE", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
+    {"filename": "BASIC", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
+    {"filename": "BASICA", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
+    {"filename": "ART", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
+    {"filename": "SAMPLES", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
+    {"filename": "MORTGAGE", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
+    {"filename": "COLORBAR", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
+    {"filename": "BUG", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
+    {"filename": "CALENDER", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
+    {"filename": "MUSIC", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
+    {"filename": "DONKEY", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
+    {"filename": "BLUE", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
+    {"filename": "HUMOR", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
+    {"filename": "POP", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
+    {"filename": "FORTY", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
+    {"filename": "DANDY", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
+    {"filename": "MARCH", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
+    {"filename": "STARS", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
+    {"filename": "HAT", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
+    {"filename": "SCALES", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
+    {"filename": "SAKURA", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
+    {"filename": "CIRCLE", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
+    {"filename": "PIECHART", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
+    {"filename": "SPACE", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
+    {"filename": "BALL", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
+    {"filename": "COMM", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
+    ];
 
 
-let files = JSON.parse(localStorage.getItem("files")) || [ 
-    {"filename": "MSDOS", "extension": "SYS", "content": "B400CD16B40EB041CD10B44BB0008D160000CD21B44CB001CD21B40EB042CD10B400CD16B40EB043CD10B44BB0008D160001CD21B44CB001CD21B40EB044CD10B400CD16B40EB045CD10B44BB0008D160002CD21B44CB001CD21B40EB046CD10B400CD16B40EB047CD10B44BB0008D160003CD21B44CB001CD21B40EB048CD10B400CD16B40EB049CD10B44BB0008D160004CD21B44CB001CD21B40EB04ACD10B400CD16B40EB04BCD10B44BB0008D160005CD21B44CB001CD21B40EB04CCD10B400CD16B40EB04DCD10B44BB0008D160006CD21B44CB001CD21B40EB04ECD10B400CD16B40EB04FCD10B44BB0008D160007CD21B44CB001CD21B40EB050CD10B400CD16B40EB051CD10B44BB0008D160008CD21B44CB001CD21B40EB052CD10B400CD16B40EB053CD10B44BB0008D160009CD21B44CB001CD21B40EB054CD10B400CD16B40EB055CD10B44BB0008D16000ACD21B44CB001CD21B40EB056CD10B400CD16B40EB057CD10B44BB0008D16000BCD21B44CB001CD21B40EB058CD10B400CD16B40EB059CD10B44BB0008D16000CCD21B44CB001CD21B40EB05ACD10B400CD16B40EB05BCD10B44BB0008D16000DCD21B44CB001CD21B40EB05CCD10B400CD16B40EB05DCD10B44BB0008D16000ECD21B44CB001CD21B40EB05ECD10B400CD16B40EB05FCD10B44BB0008D16000FCD21B44CB001CD21B40EB060CD10B400CD16B40EB061CD10B44BB0008D160010CD21B44CB001CD21B40EB062CD10B400CD16B40EB063CD10B44BB0008D160011CD21B44CB001CD21B40EB064CD10B400CD16B40EB065CD10B44BB0008D160012CD21B44CB001CD21B40EB066CD10B400CD16B40EB067CD10B44BB0008D160013CD21B44CB001CD21B40EB068CD10B400CD16B40EB069CD10B44BB0008D160014CD21B44CB001CD21B40EB06ACD10B400CD16B40EB06BCD10B44BB0008D160015CD21B44CB001CD21B40EB06CCD10B400CD16B40EB06DCD10B44BB0008D160016CD21B44CB001CD21B40EB06ECD10B400CD16B40EB06FCD10B44BB0008D160017CD21B44CB001CD21B40EB070CD10B400CD16B40EB071CD10B44BB0008D160018CD21B44CB001CD21B40EB072CD10B400CD16B40EB073CD10B44BB0008D160019CD21B44CB001CD21B40EB074CD10B400CD16B40EB075CD10B44BB0008D16001ACD21B44CB001CD21B40EB076CD10B400CD16B40EB077CD10B44BB0008D16001BCD21B44CB001CD21B40EB078CD10B400CD16B40EB079CD10B44BB0008D16001CCD21B44CB001CD21B40EB07ACD10B400CD16B40EB07BCD10B44BB0008D16001DCD21B44CB001CD21B40EB07CCD1066BB0018", "date-of-creation": "08-12-81"},
-    {"filename": "IO", "extension": "SYS", "content": "B802008B01008ED88EF08EE28CC08BC3CD137226E81C00B80000E81600F4B80000E81000F4668936007DE80C008ED88EF08EE28CC08BC3CD137226E81C00B80000E81600F4B80000E81000F4668936007DE80C008ED88EF08EE28CC08BC3CD137226E81C00B80000E81600F4B80000E81000F4668936007DE80C008ED88EF08EE28CC08BC3CD137226E81C00B80000E81600F4B80000E81000F4668936007DE80C008ED88EF08EE28CC08BC3CD137226E81C00B80000E81600F4B80000E81000F4668936007DE80C008ED88EF08EE28CC08BC3CD137226E81C00B80000E81600F4B80000E81000F4668936007DE80C008ED88EF08EE28CC08BC3CD137226E81C00B80000E81600F4B80000E81000F4668936007DE80C008ED88EF08EE28CC08BC3CD137226E81C00B80000E81600F4B80000E81000F4668936007DE80C008ED88EF08EE28CC08BC3CD137226E81C00B80000E81600F4B80000E81000F4668936007DE80C008ED88EF08EE28CC08BC3CD137226E81C00B80000E81600F4B80000E81000F4668936007DE80C008ED88EF08EE28CC08BC3CD137226E81C00B80000E81600F4B80000E81000F4668936007DE80C008ED88EF08EE28CC08BC3CD137226E81C00B80000E81600F4B80000E81000F4668936007DE80C008ED88EF08EE28CC08BC3CD137226E81C00B80000E81600F4B80000E81000F4668936007DE80C008ED88EF08EE28CC08BC3CD137226E81C00B80000E81600F4B80000E81000F4668936007DE80C008ED88EF08EE28CC08BC3CD137226E81C00B80000E81600F4B80000E81000F4668936007DE80C008ED88EF08EE28CC08BC3CD137226E81C00B80000E81600F4B80000E81000F4668936007DE80C008ED88EF08EE28CC08BC3CD137226E81C00B80000E81600F4B80000E81000F4668936007DE80C008ED88EF08EE28CC08BC3CD137226E81C00B80000E81600F4B80000E81000F4668936007DE80C008ED88EF08EE28CC08BC3CD137226E81C00B80000E81600F4B80000E81000F4668936007DE80C008ED88EF08EE28CC08BC3CD137226E81C00B80000E81600F4B80000E81000F4668936007DE80C008ED88EF08EE28CC08BC3CD137226E81C00B80000E81600F4B80000E81000F4668936007DE80C008ED88EF08EE28CC08BC3CD137226E81C00B80000E81600F4B80000E81000F4668936007DE80C008ED88EF08EE28CC08BC3CD137226E81C00B80000E81600F4B80000E81000F4668936007DE80C008ED88EF08EE28CC08BC3CD137226E81C00B80000E81600F4B80000E81000F4668936007DE80C008ED88EF08EE28CC08BC3CD137226E81C00B8", "date-of-creation": "08-12-81"},
-    {"filename": "COMMAND", "extension": "COM", "content": "B400CD16B40EB041CD10B44BB0008D160000CD21B44CB001CD21B40EB042CD10B400CD16B40EB043CD10B44BB0008D160001CD21B44CB001CD21B40EB044CD10B400CD16B40EB045CD10B44BB0008D160002CD21B44CB001CD21B40EB046CD10B400CD16B40EB047CD10B44BB0008D160003CD21B44CB001CD21B40EB048CD10B400CD16B40EB049CD10B44BB0008D160004CD21B44CB001CD21B40EB04ACD10B400CD16B40EB04BCD10B44BB0008D160005CD21B44CB001CD21B40EB04CCD10B400CD16B40EB04DCD10B44BB0008D160006CD21B44CB001CD21B40EB04ECD10B400CD16B40EB04FCD10B44BB0008D160007CD21B44CB001CD21B40EB050CD10B400CD16B40EB051CD10B44BB0008D160008CD21B44CB001CD21B40EB052CD10B400CD16B40EB053CD10B44BB0008D160009CD21B44CB001CD21B40EB054CD10B400CD16B40EB055CD10B44BB0008D16000ACD21B44CB001CD21B40EB056CD10B400CD16B40EB057CD10B44BB0008D16000BCD21B44CB001CD21B40EB058CD10B400CD16B40EB059CD10B44BB0008D16000CCD21B44CB001CD21B40EB05ACD10B400CD16B40EB05BCD10B44BB0008D16000DCD21B44CB001CD21B40EB05CCD10B400CD16B40EB05DCD10B44BB0008D16000ECD21B44CB001CD21B40EB05ECD10B400CD16B40EB05FCD10B44BB0008D16000FCD21B44CB001CD21B40EB060CD10B400CD16B40EB061CD10B44BB0008D160010CD21B44CB001CD21B40EB062CD10B400CD16B40EB063CD10B44BB0008D160011CD21B44CB001CD21B40EB064CD10B400CD16B40EB065CD10B44BB0008D160012CD21B44CB001CD21B40EB066CD10B400CD16B40EB067CD10B44BB0008D160013CD21B44CB001CD21B40EB068CD10B400CD16B40EB069CD10B44BB0008D160014CD21B44CB001CD21B40EB06ACD10B400CD16B40EB06BCD10B44BB0008D160015CD21B44CB001CD21B40EB06CCD10B400CD16B40EB06DCD10B44BB0008D160016CD21B44CB001CD21B40EB06ECD10B400CD16B40EB06FCD10B44BB0008D160017CD21B44CB001CD21B40EB070CD10B400CD16B40EB071CD10B44BB0008D160018CD21B44CB001CD21B40EB072CD10B400CD16B40EB073CD10B44BB0008D160019CD21B44CB001CD21B40EB074CD10B400CD16B40EB075CD10B44BB0008D16001ACD21B44CB001CD21B40EB076CD10B400CD16B40EB077CD10B44BB0008D16001BCD21B44CB001CD21B40EB078CD10B400CD16B40EB079CD10B44BB0008D16001CCD21B44CB001CD21B40EB07ACD10B400CD16B40EB07BCD10B44BB0008D16001DCD21B44CB001CD21B40EB07CCD10B400CD16B40EB07DCD10B44BB0008D16001ECD21B44CB001CD21B40EB07ECD10B400CD16B40EB07FCD10B44BB0008D16001FCD21B44CB001CD21B40EB080CD10B400CD16B40EB081CD10B44BB0008D160020CD21B44CB001CD21B40EB082CD10B400CD16B40EB083CD10B44BB0008D160021CD21B44CB001CD21B40EB084CD10B400CD16B40EB085CD10B44BB0008D160022CD21B44CB001CD21B40EB086CD10B400CD16B40EB087CD10B44BB0008D160023CD21B44CB001CD21B40EB088CD10B400CD16B40EB089CD10B44BB0008D160024CD21B44CB001CD21B40EB08ACD10B400CD16B40EB08BCD10B44BB0008D160025CD21B44CB001CD21B40EB08CCD10B400CD16B40EB08DCD10B44BB0008D160026CD21B44CB001CD21B40EB08ECD10B400CD16B40EB08FCD10B44BB0008D160027CD21B44CB001CD21B40EB090CD10B400CD16B40EB091CD10B44BB0008D160028CD21B44CB001CD21B40EB092CD10B400CD16B40EB093CD10B44BB0008D160029CD21B44CB001CD21B40EB094CD10B400CD16B40EB095CD10B44BB0008D16002ACD21B44CB001CD21B40EB096CD10B400CD16B40EB097CD10B44BB0008D16002BCD21B44CB001CD21B40EB098CD10B400CD16B40EB099CD10B44BB0008D16002CCD21B44CB001CD21B40EB09ACD10B400CD16B40EB09BCD10B44BB0008D16002DCD21B44CB001CD21B40EB09CCD10B400CD16B40EB09DCD10B44BB0008D16002ECD21B44CB001CD21B40EB09FCD10B400CD16B40EB0A0CD10B44BB0008D16002FCD21B44CB001CD21B40EB0A1CD10B400CD16B40EB0A2CD10B44BB0008D160030CD21B44CB001CD21B40EB0A3CD10B400CD16B40EB0A4CD10B44BB0008D160031CD21B44CB001CD21B40EB0A5CD10B400CD16B40EB0A6CD10B44BB0008D1", "date-of-creation": "08-12-81"},
-    {"filename": "CHKDSK", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": "08-12-81"},
-    {"filename": "SYS", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": "08-12-81"},
-    {"filename": "DISKCOPY", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": "08-12-81"},
-    {"filename": "DISKCOMP", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": "08-12-81"},
-    {"filename": "COMP", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": "08-12-81"},
-    {"filename": "DATE", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": "08-12-81"},
-    {"filename": "TIME", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": "08-12-81"},
-    {"filename": "MODE", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": "08-12-81"},
-    {"filename": "EDLIN", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": "08-12-81"},
-    {"filename": "DEBUG", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": "08-12-81"},
-    {"filename": "LINK", "extension": "EXE", "content": "<system-code-placeholder>", "date-of-creation": "08-12-81"},
-    {"filename": "BASIC", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": "08-12-81"},
-    {"filename": "BASICA", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": "08-12-81"},
-    {"filename": "ART", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": "08-12-81"},
-    {"filename": "SAMPLES", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": "08-12-81"},
-    {"filename": "MORTGAGE", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": "08-12-81"},
-    {"filename": "COLORBAR", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": "08-12-81"},
-    {"filename": "BUG", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": "08-12-81"},
-    {"filename": "CALENDER", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": "08-12-81"},
-    {"filename": "MUSIC", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": "08-12-81"},
-    {"filename": "DONKEY", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": "08-12-81"},
-    {"filename": "BLUE", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": "08-12-81"},
-    {"filename": "HUMOR", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": "08-12-81"},
-    {"filename": "POP", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": "08-12-81"},
-    {"filename": "FORTY", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": "08-12-81"},
-    {"filename": "DANDY", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": "08-12-81"},
-    {"filename": "MARCH", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": "08-12-81"},
-    {"filename": "STARS", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": "08-12-81"},
-    {"filename": "HAT", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": "08-12-81"},
-    {"filename": "SCALES", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": "08-12-81"},
-    {"filename": "SAKURA", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": "08-12-81"},
-    {"filename": "CIRCLE", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": "08-12-81"},
-    {"filename": "PIECHART", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": "08-12-81"},
-    {"filename": "SPACE", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": "08-12-81"},
-    {"filename": "BALL", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": "08-12-81"},
-    {"filename": "COMM", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": "08-12-81"},
-];
+    // Add a date-of-creation field to each file in the array (MM-DD-YY format)
+    const creationDate = generateRandomDate();
+    files.forEach(file => {
+        file["date-of-creation"] = creationDate;
+    });
 
-respondToInput();
-saveFiles();
-moveCursorToEnd();
+    // Save the files array to localStorage
+    saveFiles();
+
+    moveCursorToEnd();
+    respondToInput();
+    saveFiles();
     </script>
 </body>
 </html>
