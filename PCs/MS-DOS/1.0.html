@@ -1,28 +1,34 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="stylesheet" href="https://virtualjs.github.io/Emulator/Windows/External Styling/fonts.css"> <!-- Import PxPlus IBM CGA and Fixedsys 62-->
+    <link rel="stylesheet" href="https://virtualjs.github.io/Emulator/External%20Styling/IBM_CGA.css"> <!-- Import PxPlus IBM CGA-->
     <style>
-        html, body, div, input {
-            font-family: "PxPlus IBM CGA";
-        }
+html, body, div, span, input, #userInput {
+    font-size: 110% !important; /* Set a base font size */
+    cursor: none;
+    overflow: hidden;
+}
+
+html, body, div, input {
+    font-family: "PxPlus IBM CGA";
+}
+
+div[contenteditable="true"] {
+    background-color: transparent;
+    color: white;
+    border: none;
+    outline: none;
+    padding: 0;
+    margin: 0;
+
+}
+
         /* Output container style */
         #output-container {
             white-space: pre-wrap;
             margin-top: 0;
         }
 
-        /* Make the input container take up the full width */
-        #input-container {
-            width: 100%;
-        }
-
-        /* Style for user input area */
-        #userInput {
-            display: inline-block;
-            min-width: 100%;
-            word-wrap: break-word;
-        }
 .black {
    background-color: black;
    color: white;
@@ -39,7 +45,7 @@ div[contenteditable="true"] {
 }
 
 #input-container .black div[contenteditable="true"] {
-    min-width: 50px;
+    min-width: 1px;
     display: inline-block;
     vertical-align: middle;
     box-sizing: border-box;
@@ -56,10 +62,26 @@ div[contenteditable="true"] {
     <div id="input-container">
         <div class="black">
             <span>A&gt;</span>
-            <div contenteditable="true" id="userInput"></div>
+            <div width="100%"id="userInput"></div>
         </div>
     </div>
+    <noscript>
+  <div style="background-color: #f8d7da; padding: 20px; border-radius: 5px; border: 1px solid #f5c6cb; color: #721c24; font-family: Arial, sans-serif; font-size: 16px;">
+    <strong>Warning:</strong> This emulator requires JavaScript to function properly. Please enable JavaScript in your browser settings and reload the page.
+  </div>
+</noscript>
     <script>
+      function autoScroll() {
+    setInterval(() => {
+        window.scrollBy(0, 5); // Scroll 1px down every interval
+    }, -20);
+}
+
+// Start auto-scrolling when the page loads
+window.onload = autoScroll;
+document.addEventListener("contextmenu", function() {
+  event.preventDefault();
+});
         // Handle F12 key press
 document.addEventListener('keydown', (event) => {
   if (event.key === 'F12') {
@@ -76,72 +98,118 @@ function toggleFullscreen() {
   if (!document.fullscreenElement) {
     if (document.documentElement.requestFullscreen) {
       document.documentElement.requestFullscreen();
-    } else if (document.documentElement.mozRequestFullScreen) { 
+    } else if (document.documentElement.mozRequestFullScreen) {
       document.documentElement.mozRequestFullScreen();
-    } else if (document.documentElement.webkitRequestFullscreen) { 
+    } else if (document.documentElement.webkitRequestFullscreen) {
       document.documentElement.webkitRequestFullscreen();
-    } else if (document.documentElement.msRequestFullscreen) { 
+    } else if (document.documentElement.msRequestFullscreen) {
       document.documentElement.msRequestFullscreen();
     }
   } else {
     if (document.exitFullscreen) {
       document.exitFullscreen();
-    } else if (document.mozCancelFullScreen) { 
+    } else if (document.mozCancelFullScreen) {
       document.mozCancelFullScreen();
-    } else if (document.webkitExitFullscreen) { 
+    } else if (document.webkitExitFullscreen) {
       document.webkitExitFullscreen();
-    } else if (document.msExitFullscreen) { 
+    } else if (document.msExitFullscreen) {
       document.msExitFullscreen();
     }
   }
 }
-    const userInput = document.getElementById("userInput");
-    const outputContainer = document.getElementById("output-container");
 
-    let inFileCreation = false;
-    let currentFileName = '';
-    let currentFileType = '';
+const userInput = document.getElementById("userInput");
+const outputContainer = document.getElementById("output-container");
 
-    // Function to generate a random date between 08-12-81 and 04-27-82 in MM-DD-YY format
-    function generateRandomDate() {
-        const startDate = new Date(1981, 7, 12); // August 12, 1981
-        const endDate = new Date(1982, 3, 27); // April 27, 1982
+var inFileCreation = false;
+let currentFileName = '';
+let currentFileType = '';
+let fileContent = '';
 
-        var randomTime = startDate.getTime() + Math.random() * (endDate.getTime() - startDate.getTime());
-        var randomDate = new Date(randomTime);
+// Generate a random date and time between MS-DOS 1.0 and 1.1 releases
+function generateRandomDateWithTime() {
+  const startDate = new Date(1981, 7, 12); // MS-DOS 1.0 release date: August 12, 1981
+  const endDate = new Date(1982, 4, 27); // MS-DOS 1.1 release date: May 27, 1982
 
-        const month = (randomDate.getMonth() + 1).toString().padStart(2, '0'); // MM
-        const day = randomDate.getDate().toString().padStart(2, '0'); // DD
-        const year = randomDate.getFullYear().toString().slice(-2); // YY
+  if (startDate >= endDate) {
+    console.error("Start date must be earlier than the end date.");
+    return;
+  }
 
-       return `${month}-${day}-${year}`; // Return date in MM-DD-YY format
-    }
-function generateRandomTime() {
-  const hours = Math.floor(Math.random() * 24).toString().padStart(2, '0');
-  const minutes = Math.floor(Math.random() * 60).toString().padStart(2, '0');
-  const seconds = Math.floor(Math.random() * 60).toString().padStart(2, '0');
-  const milliseconds = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+  const randomTimestamp = Math.random() * (endDate - startDate) + startDate.getTime();
+  const randomDate = new Date(randomTimestamp);
 
-  var randomTime = `${hours}:${minutes}:${seconds}.${milliseconds}`;
+  if (isNaN(randomDate.getTime())) {
+    console.error("Generated date is invalid.");
+    return;
+  }
 
-  // Save the random time to localStorage
-  localStorage.setItem('randomTime', randomTime);
+  function generateRandomTime() {
+    const hours = Math.floor(Math.random() * 24);
+    const minutes = Math.floor(Math.random() * 60);
+    const seconds = Math.floor(Math.random() * 60);
+    const milliseconds = Math.floor(Math.random() * 1000);
+    return { hours, minutes, seconds, milliseconds };
+  }
 
-  return randomTime;
+  function addTimeToDate(date, time) {
+    date.setHours(time.hours);
+    date.setMinutes(time.minutes);
+    date.setSeconds(time.seconds);
+    date.setMilliseconds(time.milliseconds);
+  }
+
+  function incrementDateByOneDay(date) {
+    date.setDate(date.getDate() + 1);
+  }
+
+  let randomTime = generateRandomTime();
+  addTimeToDate(randomDate, randomTime);
+
+  const mm = String(randomDate.getMonth() + 1).padStart(2, '0');
+  const dd = String(randomDate.getDate()).padStart(2, '0');
+  const yy = String(randomDate.getFullYear()).slice(-2);
+
+  const formattedDate = `${mm}-${dd}-${yy}`;
+  const hh = String(randomDate.getHours()).padStart(2, '0');
+  const mi = String(randomDate.getMinutes()).padStart(2, '0');
+  const ss = String(randomDate.getSeconds()).padStart(2, '0');
+  const ms = String(randomDate.getMilliseconds()).padStart(3, '0');
+  const formattedTime = `${hh}:${mi}:${ss}.${ms}`;
+
+  if (randomDate.getHours() === 23 && randomDate.getMinutes() === 59 && randomDate.getSeconds() === 59 && randomDate.getMilliseconds() >= 999) {
+    incrementDateByOneDay(randomDate);
+    randomTime = generateRandomTime();
+    addTimeToDate(randomDate, randomTime);
+  }
+
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem('randomDate', formattedDate);
+    localStorage.setItem('randomTime', formattedTime);
+  } else {
+    console.warn('localStorage is not available.');
+  }
+
+  return { formattedDate, formattedTime };
 }
 
-// Generate and save the random time
-const generatedTime = generateRandomTime();
+// Call the function to generate and save the date and time separately
+const randomDateTime = generateRandomDateWithTime();
+console.log("Random date: " + randomDateTime.formattedDate);
+console.log("Random time: " + randomDateTime.formattedTime);
 
-// Retrieve the saved time from localStorage
-localStorage.setItem('randomDate', (new Date(new Date(1981, 7, 12).getTime() + Math.random() * (new Date(1982, 3, 27).getTime() - new Date(1981, 7, 12).getTime()))).toLocaleDateString('en-US', { year: '2-digit', month: '2-digit', day: '2-digit' }));
-localStorage.setItem('randomTime', new Date().toTimeString().slice(0, 8));
-    // Save files to localStorage
-    function saveFiles() {
-        localStorage.setItem("files", JSON.stringify(files));
-    }
+var date = randomDateTime.formattedDate;
+var time = randomDateTime.formattedTime; // Corrected syntax error
+date2 = localStorage.setItem("fakeDate", date);
+var savedDate = localStorage.setItem("date", date2);
+time2 = localStorage.setItem("fakeData", time);
+var savedTime = localStorage.setItem("time", time2);
+// Save files to localStorage
+function saveFiles() {
+  localStorage.setItem("files", JSON.stringify(files));
+}
 
-    // Function to move cursor to the far right after every input
+        // Function to move cursor to the far right after every input
     function moveCursorToEnd() {
         const range = document.createRange();
         const selection = window.getSelection();
@@ -182,48 +250,66 @@ localStorage.setItem('randomTime', new Date().toTimeString().slice(0, 8));
             } else if (event.key === "Enter") {
                 let inputText = userInput.innerText.trim();
                 let commandOutput = '';
-
-                if (inputText.toUpperCase() === "DIR") {
-                    commandOutput = [
-                        ...files.map(file => {
-                            // Format the filename to 8 characters, the extension to 3 characters
-                            const paddedFilename = file.filename.padEnd(8, ' ');
-                            const paddedExtension = file.extension.padEnd(3, ' ');
-                            const size = file.content.length; // Get the size of the file content
-                            return `${paddedFilename} ${paddedExtension} ${size.toString().padStart(5, ' ')} ${file["date-of-creation"]}`;
-                        })
-                    ].join("\n");
-                }
+        if (inputText.toUpperCase() === "DIR") {
+            // Build the command output synchronously
+            commandOutput = files.map(file => {
+                const formattedFilename = file.filename.toUpperCase().padEnd(8, ' ');
+                const formattedExtension = file.extension.toUpperCase().padEnd(3, ' ');
+                const size = file.content.length; // Get the size of the file content
+                return `${formattedFilename} ${formattedExtension} ${size.toString().padStart(5, ' ')} ${file["date-of-creation"]}`;
+            }).join("\n");
+        }
                 else if (inputText.toUpperCase().startsWith("DEL ")) {
-                    let fileName = inputText.slice(4).trim();
-                    let fileIndex = files.findIndex(file => file.filename === fileName);
+                    let args = inputText.toUpperCase().slice(4).trim();
+                    let fileName = args.split(".")[0];
+                    let fileExt = args.split(".")[1];
+                    let fileIndex = files.findIndex(file => file.filename + "." + file.extension === args);
                     if (fileIndex !== -1) {
                         files.splice(fileIndex, 1); // Remove the file from the array
                         saveFiles(); // Save updated files to localStorage
-                        commandOutput = `File ${fileName} deleted.`;
-                        
+                        commandOutput = `File ${fileName}.${fileExt} deleted.`;
                     } else {
                         commandOutput = "Bad command or file name";
                     }
                 }
                 
-                else if (inputText.toUpperCase().startsWith("REN ")) {
-                    let parts = inputText.slice(4).trim().split(" ");
-                    if (parts.length === 2) {
-                        let oldFileName = parts[0];
-                        let newFileName = parts[1];
-                        let file = files.find(file => file.filename === oldFileName);
-                        if (file) {
-                            file.filename = newFileName;
-                            saveFiles(); // Save updated files to localStorage
-                            commandOutput = `File ${oldFileName} renamed to ${newFileName}.`;
-                        } else {
-                            commandOutput = "Bad command or file name";
-                        }
-                    } else {
-                        commandOutput = "Bad command or file name";
-                    }
-                }
+else if (inputText.toUpperCase().startsWith("REN ")) {
+    // Convert input to uppercase for case-insensitive comparison
+    let parts = inputText.toUpperCase().slice(4).trim().split(" "); // Split the input into two parts
+    if (parts.length === 2) {
+        // Extract the old and new filenames (convert to lowercase for case-insensitive comparison)
+        let oldFileNameWithExt = parts[0].toLowerCase(); // Case-insensitive old file name
+        let newFileNameWithExt = parts[1].toLowerCase(); // Case-insensitive new file name
+        
+        // Split the old filename and extension
+        let oldFileParts = oldFileNameWithExt.split(".");
+        let oldFileName = oldFileParts[0]; // Get the old filename
+        let oldFileExt = oldFileParts[1] || ""; // Get the old extension (if any)
+        
+        // Split the new filename and extension
+        let newFileParts = newFileNameWithExt.split(".");
+        let newFileName = newFileParts[0]; // Get the new filename
+        let newFileExt = newFileParts[1] || ""; // Get the new extension (if any)
+
+        // Find the file by its old name (case-insensitive comparison)
+        let file = files.find(file => 
+            file.filename.toLowerCase() === oldFileName && 
+            file.extension.toLowerCase() === oldFileExt
+        );
+        
+        if (file) {
+            // Rename the file by changing the filename and extension (case-insensitive)
+            file.filename = newFileName;
+            file.extension = newFileExt;
+            saveFiles(); // Save updated files to localStorage
+        } else {
+            commandOutput = "Bad command or file name";
+        }
+    } else {
+        commandOutput = "Bad command or file name";
+    }
+}
+
                 else if (inputText.toUpperCase().startsWith("TYPE ")) {
                     let fileName = inputText.toUpperCase().slice(5).trim();
                     let file = files.find(file => file.filename + "." + file.extension === fileName);
@@ -262,7 +348,7 @@ localStorage.setItem('randomTime', new Date().toTimeString().slice(0, 8));
                     "filename": currentFileName,
                     "extension": currentFileType,
                     "content": fileContent,
-                    "date-of-creation": randomDate
+                    "date-of-creation": savedDate
                 });
                 saveFiles(); // Save to localStorage
                 commandOutput = `1 file(s) copied`;
@@ -276,6 +362,7 @@ localStorage.setItem('randomTime', new Date().toTimeString().slice(0, 8));
                 if (inputText.trim() === "") {
                     outputContainer.textContent += `A> ${inputText}\n`;
                 }
+
                  else {
                     outputContainer.textContent += `A> ${inputText}\n${commandOutput}\n`;
                 }
@@ -289,60 +376,90 @@ localStorage.setItem('randomTime', new Date().toTimeString().slice(0, 8));
     }
     // Load files from localStorage or use default files
     let files = JSON.parse(localStorage.getItem("files")) || [
-        {"filename": "MSDOS", "extension": "SYS", "content": "; ******************************************\n; File: MSDOS.SYS\n; Description: This is the system initialization file for MS-DOS.\n;              It contains configuration settings for the MS-DOS operating system.\n; Copyright (c) Microsoft Corporation. All rights reserved.\n; *******************************************\n ; Load the IO.SYS file \n MOV AH, 0x0E            ; BIOS function to load a file \nMOV AL, 0x00        \n; BIOS function for loading IO.SYS \nMOV DX, 'IO.SYS'        ; The file name we want to load \nINT 0x13                ; Call BIOS interrupt 0x13 to read the file \n; Initialize system resources,\nsetup disk drive \n; Other MS-DOS internal operations go here \n; After IO.SYS has been loaded, jump to the system initialization code in IO.SYS \nJMP 0x07C0              ; Transfer control to IO.SYS \n; End of MSDOS.SYS code ;"},
-        {"filename": "IO", "extension": "SYS", "content": "; ****************************************** \n; File: IO.SYS \n; Description: This is the input/output\nsystem file for MS-DOS. \n;              It manages low-level hardware interactions and device drivers. \n; Copyright (c) Microsoft Corporation. All rights reserved. \n;\n*******************************************; IO.SYS for MS-DOS 1.0 (Simplified Concept)\n; Assembly language (x86)\n\nORG 0x7C00         ; BIOS loads the bootloader at this address\n                ; This is where IO.SYS will be loaded.\n\n; Step 1: Set up data segment for system use\nMOV AX, 0x7C0      ; Initialize DS to point to boot sector address (from BIOS)\nMOV DS, AX         ; Set the data segment to the bootloader's address\n\n; Step 2: Basic Disk Initialization (for Floppy Disk Controller)\n; In real IO.SYS, there would be complex routines for initializing the floppy disk controller\n; For simplicity, we'll use BIOS interrupt 0x13 for disk read/write.\n\nDISK_INIT:\n    ; Initialize disk drive (Floppy or Hard drive, here assumed to be floppy).\n    ; Disk I/O operations are done using BIOS interrupt 0x13 for reading and writing sectors.\n    MOV AH, 0x00       ; BIOS function code for initializing the floppy disk.\n    MOV DL, 0x00       ; DL=0 for floppy disk A\n    INT 0x13           ; Call BIOS interrupt to initialize the disk controller\n\n    ; Check for disk initialization error (carry flag is set on error)\n    JC  DISK_ERROR     ; Jump to error handling if there was a disk error.\n\n; Step 3: Load FAT File System (simplified)\n; Real MS-DOS 1.0 would need to read the boot sector to load the file system.\n; Let's assume this step initializes a file system from the disk.\nLOAD_FAT:\n    MOV AH, 0x02       ; BIOS function to read sectors from disk.\n    MOV AL, 0x01       ; We want to read the first sector (boot sector).\n    MOV DL, 0x00       ; Drive A (Floppy)\n    MOV DS, 0x0000     ; Segment for file buffer (simplified)\n    MOV DX, 0x0100     ; Offset in memory for the sector (for example)\n    INT 0x13           ; Call BIOS interrupt to read the sector.\n\n    ; Check for disk read error (carry flag is set on error)\n    JC  DISK_ERROR     ; Jump to error handling if there was an issue.\n\n; Step 4: Initialize Display (simple text output)\n    MOV AH, 0x0E       ; BIOS teletype output function (text mode).\n    MOV AL, 'I'        ; Character to display\n    INT 0x10           ; Call BIOS interrupt to print character.\n\n    MOV AL, 'O'        ; Next character to display\n    INT 0x10\n\n    MOV AL, '.'        ; End of message\n    INT 0x10\n\n; Step 5: Handle Keyboard Input (simplified)\n    MOV AH, 0x00       ; BIOS function to wait for a key press\n    INT 0x16           ; Call BIOS interrupt for keyboard input\n    ; AX will now contain the key pressed (simplified).\n    ; Here, we just return to the caller to simulate basic input.\n\n; Step 6: Main loop (waiting for further input)\nMAIN_LOOP:\n    JMP MAIN_LOOP      ; Infinite loop to keep system alive (simplified)\n\n; Error Handling Routine\nDISK_ERROR:\n    MOV AH, 0x0E       ; BIOS function to print error character.\n    MOV AL, 'E'        ; Character for 'Error'\n    INT 0x10\n    MOV AL, 'R'        ; Character for 'Error'\n    INT 0x10\n    MOV AL, 'R'\n    INT 0x10\n    MOV AL, 'O'\n    INT 0x10\n    MOV AL, 'R'\n    INT 0x10\n\n    ; Halt the system (simple halt)\n    HLT\n\n; End of IO.SYS (Simplified Concept)\n", "date-of-creation": randomDate},
-        {"filename": "COMMAND", "extension": "COM", "content": "saveFiles();", "date-of-creation": randomDate},
-            {"filename": "CHKDSK", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
-    {"filename": "SYS", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
-    {"filename": "DISKCOPY", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
-    {"filename": "DISKCOMP", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
-    {"filename": "COMP", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
-    {"filename": "DATE", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
-    {"filename": "TIME", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
-    {"filename": "MODE", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
-    {"filename": "EDLIN", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
-    {"filename": "DEBUG", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
-    {"filename": "LINK", "extension": "EXE", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
-    {"filename": "BASIC", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
-    {"filename": "BASICA", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
-    {"filename": "ART", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
-    {"filename": "SAMPLES", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
-    {"filename": "MORTGAGE", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
-    {"filename": "COLORBAR", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
-    {"filename": "BUG", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
-    {"filename": "CALENDER", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
-    {"filename": "MUSIC", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
-    {"filename": "DONKEY", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
-    {"filename": "BLUE", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
-    {"filename": "HUMOR", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
-    {"filename": "POP", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
-    {"filename": "FORTY", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
-    {"filename": "DANDY", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
-    {"filename": "MARCH", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
-    {"filename": "STARS", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
-    {"filename": "HAT", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
-    {"filename": "SCALES", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
-    {"filename": "SAKURA", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
-    {"filename": "CIRCLE", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
-    {"filename": "PIECHART", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
-    {"filename": "SPACE", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
-    {"filename": "BALL", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
-    {"filename": "COMM", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": randomDate},
+        {"filename": "MSDOS", "extension": "SYS", "content": "; ******************************************\n; File: MSDOS.SYS\n; Description: This is the system initialization file for MS-DOS.\n;              It contains configuration settings for the MS-DOS operating system.\n; Copyright (c) Microsoft Corporation. All rights reserved.\n; *******************************************\n ; Load the IO.SYS file \n MOV AH, 0x0E            ; BIOS function to load a file \nMOV AL, 0x00        \n; BIOS function for loading IO.SYS \nMOV DX, 'IO.SYS'        ; The file name we want to load \nINT 0x13                ; Call BIOS interrupt 0x13 to read the file \n; Initialize system resources,\nsetup disk drive \n; Other MS-DOS internal operations go here \n; After IO.SYS has been loaded, jump to the system initialization code in IO.SYS \nJMP 0x07C0              ; Transfer control to IO.SYS \n; End of MSDOS.SYS code ;", "date-of-creation": date},
+        {"filename": "IO", "extension": "SYS", "content": "; ****************************************** \n; File: IO.SYS \n; Description: This is the input/output\nsystem file for MS-DOS. \n;              It manages low-level hardware interactions and device drivers. \n; Copyright (c) Microsoft Corporation. All rights reserved. \n;\n*******************************************; IO.SYS for MS-DOS 1.0 (Simplified Concept)\n; Assembly language (x86)\n\nORG 0x7C00         ; BIOS loads the bootloader at this address\n                ; This is where IO.SYS will be loaded.\n\n; Step 1: Set up data segment for system use\nMOV AX, 0x7C0      ; Initialize DS to point to boot sector address (from BIOS)\nMOV DS, AX         ; Set the data segment to the bootloader's address\n\n; Step 2: Basic Disk Initialization (for Floppy Disk Controller)\n; In real IO.SYS, there would be complex routines for initializing the floppy disk controller\n; For simplicity, we'll use BIOS interrupt 0x13 for disk read/write.\n\nDISK_INIT:\n    ; Initialize disk drive (Floppy or Hard drive, here assumed to be floppy).\n    ; Disk I/O operations are done using BIOS interrupt 0x13 for reading and writing sectors.\n    MOV AH, 0x00       ; BIOS function code for initializing the floppy disk.\n    MOV DL, 0x00       ; DL=0 for floppy disk A\n    INT 0x13           ; Call BIOS interrupt to initialize the disk controller\n\n    ; Check for disk initialization error (carry flag is set on error)\n    JC  DISK_ERROR     ; Jump to error handling if there was a disk error.\n\n; Step 3: Load FAT File System (simplified)\n; Real MS-DOS 1.0 would need to read the boot sector to load the file system.\n; Let's assume this step initializes a file system from the disk.\nLOAD_FAT:\n    MOV AH, 0x02       ; BIOS function to read sectors from disk.\n    MOV AL, 0x01       ; We want to read the first sector (boot sector).\n    MOV DL, 0x00       ; Drive A (Floppy)\n    MOV DS, 0x0000     ; Segment for file buffer (simplified)\n    MOV DX, 0x0100     ; Offset in memory for the sector (for example)\n    INT 0x13           ; Call BIOS interrupt to read the sector.\n\n    ; Check for disk read error (carry flag is set on error)\n    JC  DISK_ERROR     ; Jump to error handling if there was an issue.\n\n; Step 4: Initialize Display (simple text output)\n    MOV AH, 0x0E       ; BIOS teletype output function (text mode).\n    MOV AL, 'I'        ; Character to display\n    INT 0x10           ; Call BIOS interrupt to print character.\n\n    MOV AL, 'O'        ; Next character to display\n    INT 0x10\n\n    MOV AL, '.'        ; End of message\n    INT 0x10\n\n; Step 5: Handle Keyboard Input (simplified)\n    MOV AH, 0x00       ; BIOS function to wait for a key press\n    INT 0x16           ; Call BIOS interrupt for keyboard input\n    ; AX will now contain the key pressed (simplified).\n    ; Here, we just return to the caller to simulate basic input.\n\n; Step 6: Main loop (waiting for further input)\nMAIN_LOOP:\n    JMP MAIN_LOOP      ; Infinite loop to keep system alive (simplified)\n\n; Error Handling Routine\nDISK_ERROR:\n    MOV AH, 0x0E       ; BIOS function to print error character.\n    MOV AL, 'E'        ; Character for 'Error'\n    INT 0x10\n    MOV AL, 'R'        ; Character for 'Error'\n    INT 0x10\n    MOV AL, 'R'\n    INT 0x10\n    MOV AL, 'O'\n    INT 0x10\n    MOV AL, 'R'\n    INT 0x10\n\n    ; Halt the system (simple halt)\n    HLT\n\n; End of IO.SYS (Simplified Concept)\n", "date-of-creation": date},
+        {"filename": "COMMAND", "extension": "COM", "content": "saveFiles();", "date-of-creation": date},
+            {"filename": "CHKDSK", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": date},
+    {"filename": "SYS", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": date},
+    {"filename": "DISKCOPY", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": date},
+    {"filename": "DISKCOMP", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": date},
+    {"filename": "COMP", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": date},
+    {"filename": "DATE", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": date},
+    {"filename": "TIME", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": date},
+    {"filename": "MODE", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": date},
+    {"filename": "EDLIN", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": date},
+    {"filename": "DEBUG", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": date},
+    {"filename": "LINK", "extension": "EXE", "content": "<system-code-placeholder>", "date-of-creation": date},
+    {"filename": "BASIC", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": date},
+    {"filename": "BASICA", "extension": "COM", "content": "<system-code-placeholder>", "date-of-creation": date},
+    {"filename": "ART", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": date},
+    {"filename": "SAMPLES", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": date},
+    {"filename": "MORTGAGE", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": date},
+    {"filename": "COLORBAR", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": date},
+    {"filename": "BUG", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": date},
+    {"filename": "CALENDER", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": date},
+    {"filename": "MUSIC", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": date},
+    {"filename": "DONKEY", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": date},
+    {"filename": "BLUE", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": date},
+    {"filename": "HUMOR", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": date},
+    {"filename": "POP", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": date},
+    {"filename": "FORTY", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": date},
+    {"filename": "DANDY", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": date},
+    {"filename": "MARCH", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": date},
+    {"filename": "STARS", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": date},
+    {"filename": "HAT", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": date},
+    {"filename": "SCALES", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": date},
+    {"filename": "SAKURA", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": date},
+    {"filename": "CIRCLE", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": date},
+    {"filename": "PIECHART", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": date},
+    {"filename": "SPACE", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": date},
+    {"filename": "BALL", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": date},
+    {"filename": "COMM", "extension": "BAS", "content": "<system-code-placeholder>", "date-of-creation": date},
     ];
 
 
-    // Add a date-of-creation field to each file in the array (MM-DD-YY format)
-    const creationDate = generateRandomDate();
-    files.forEach(file => {
-        file["date-of-creation"] = creationDate;
-    });
 
     // Save the files array to localStorage
     saveFiles();
 
     moveCursorToEnd();
-    respondToInput();
     saveFiles();
+    const commandShell = files[2]
+    const io = files[1]
+    let dos = files[0]
+    if (io.filename == "IO") {
+        console.log("Successfully loaded IO.SYS")
+         userInput.setAttribute("contenteditable", "true");
+    }
+    else if (io.filename != "IO") {
+        console.error("Failed to find IO.SYS")
+        userInput.setAttribute("contenteditable", "false");
+    }
+    if (commandShell.filename == "COMMAND") {
+        userInput.setAttribute("contenteditable", "true");
+        respondToInput();
+        console.log("Successfully loaded COMMAND.COM ")
+    }
+    else if (commandShell.filename != "COMMAND") {
+         userInput.setAttribute("contenteditable", "true");
+        respondToInput();
+        console.error("Successfully loaded COMMAND.COM ")
+    }
+    document.addEventListener("click", function() {
+        userInput.focus();
+    });
+        // Automatically scrolls the page down by 1px every 50 milliseconds
+function autoScroll() {
+    setInterval(() => {
+        window.scrollBy(0, 5); // Scroll 5px down every interval
+    }, 50); // Adjust the interval as needed
+}
+
+// Start auto-scrolling when the page loads
+window.onload = autoScroll;
+if (window.scrollY > 150) {
+  autoScroll()
+}
     </script>
 </body>
-</html>
+</html> 
